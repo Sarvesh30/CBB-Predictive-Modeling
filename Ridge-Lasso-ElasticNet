@@ -1,0 +1,52 @@
+library(glmnet)
+
+names(cbb_data) <- c("TEAM", "CONF", "G", "W", "ADJOE", 
+                     "ADJDE", "BARTHAG", "EFG_O", "EFG_D",
+                     "TOR", "TORD", "ORB", "DRB", "FTR", 
+                     "FTRD", "2P%", "D2P%", "3P%", "D3P%", 
+                     "ADJ_T", "WAB", "POSTSEASON", "SEED", "YEAR", "WINPER")
+
+predictor_data <- as.matrix(cbb_data[, c("ADJOE", "ADJDE", "EFG_O", "EFG_D", 
+                                           "TOR", "TORD", "ORB", "DRB", 
+                                           "FTR", "FTRD", "2P%", "D2P%", 
+                                           "3P%", "D3P%")])
+
+target_data <- as.matrix(cbb_data[, "WINPER"])
+
+train_rows <- sample(1:nrow(cbb_data), size = 0.66 * nrow(cbb_data))
+
+pred_train <- predictor_data[train_rows, ]
+pred_test <- predictor_data[-train_rows, ]
+
+target_train <- target_data[train_rows, ]
+target_test <- target_data[-train_rows, ]
+
+# Ridge Regression 
+
+alpha0.fit <- cv.glmnet(pred_train, target_train, type.measure = "mse",
+                        alpha = 0, family = "gaussian")
+
+alpha0.predicted <- predict(alpha0.fit, s = 0.000000001, 
+                            newx = pred_test)
+
+mean((target_test - alpha0.predicted)^2)
+
+# Lasso Regression 
+
+alpha1.fit <- cv.glmnet(pred_train, target_train, type.measure = "mse",
+                        alpha = 1, family = "gaussian")
+
+alpha1.predicted <- predict(alpha1.fit, s = 0.000001, 
+                            newx = pred_test)
+
+mean((target_test - alpha1.predicted)^2)
+
+# Elastic Net Regression 
+
+alpha0.5.fit <- cv.glmnet(pred_train, target_train, type.measure = "mse", 
+                          alpha = 0.5, family = "gaussian")
+
+alpha0.5.predicted <- predict(alpha0.5.fit, s = alpha0.5.fit$lambda.1se, 
+                              newx = pred_test)
+
+mean((target_test - alpha0.5.predicted)^2)
